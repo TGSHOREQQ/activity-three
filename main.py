@@ -18,7 +18,7 @@ FEATURES = 10
 NO_CLASSES = 5
 TEST_SIZE = 0.3
 
-
+# Creates machine learning models for dataset
 def create_model(model_type, k):
     model_name = type(model_type).__name__
     time_start = time.perf_counter()
@@ -36,12 +36,23 @@ def create_model(model_type, k):
         print("Optimal K value: %f" % k)
     confusion_matrix(model, model_name)
 
-
+# Plots confusion matrix for ML model
 def confusion_matrix(model, model_name):
     plot_confusion_matrix(model, X_test, y_test, normalize='true')
     plt.title(f'{model_name} Confusion Matrix')
     plt.show()
 
+# Find optimal k value for kNN
+# - Samples / what, is best?
+def optimal_k(samples):
+    k_acc_scores = []
+    k_values = [i for i in range(1, int(samples / 500), 2)]
+    for k in k_values:
+        knn = KNeighborsClassifier(n_neighbors=k, n_jobs=-1)
+        cross_scores = cross_val_score(knn, X_train, y_train, cv=None, scoring='accuracy')
+        k_acc_scores.append(cross_scores.mean())
+    optimal_k = k_values[k_acc_scores.index(max(k_acc_scores))]
+    return optimal_k
 
 # Generating 2D 3-class classification dataset using sklearn function
 X, y = make_classification(n_samples=SAMPLES, n_features=FEATURES, n_classes=NO_CLASSES, weights=None, flip_y=0.01,
@@ -69,17 +80,8 @@ plt.show()
 
 X_train, X_test, y_train, y_test = train_test_split(x_pca, y, test_size=TEST_SIZE, random_state=42)
 
-# # k-Nearest Neighbour
-k_acc_scores = []
-k_values = [i for i in range(1, int(SAMPLES / 500), 2)]
-for k in k_values:
-    knn = KNeighborsClassifier(n_neighbors=k, n_jobs=-1)
-    cross_scores = cross_val_score(knn, X_train, y_train, cv=None, scoring='accuracy')
-    k_acc_scores.append(cross_scores.mean())
-optimal_k = k_values[k_acc_scores.index(max(k_acc_scores))]
-
 models = [LogisticRegression(), DecisionTreeClassifier(), RandomForestClassifier(),
-          KNeighborsClassifier(n_neighbors=optimal_k)]
+          KNeighborsClassifier(n_neighbors=optimal_k(SAMPLES))]
 
 for model in models:
     create_model(model, optimal_k)
